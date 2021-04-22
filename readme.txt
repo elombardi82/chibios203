@@ -72,6 +72,14 @@
 *****************************************************************************
 *** Releases and Change Log                                               ***
 *****************************************************************************
+*** 20.3.2 Edoardo Lombardi patch ***
+- NEW: Support for H7
+- NEW: I2Sv3 driver
+- NEW: QSPIv2 driver
+- NEW: Fixed bugs in DMA driver
+- NEW: Added Flash driver mt25q
+- NEW: Support for STM32H750XB-DISCOVERY
+- NEW: Demos for H7 in testhal
 
 *** 20.3.2 ***
 - NEW: Support for 3 analog watchdogs in ADCv3 (STM32F3, L4, L4+, G4).
