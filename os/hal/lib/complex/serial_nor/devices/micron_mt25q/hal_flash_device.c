@@ -122,6 +122,7 @@ static const wspi_command_t mt25q_cmd_read_id = {
   .alt              = 0,
   .dummy            = 0
 };
+
 /* TODO: Added. */
 static const wspi_command_t mt25q_cmd_mul_read_id = {
   .cmd              = MT25Q_CMD_MULTIPLE_IO_READ_ID,
@@ -256,7 +257,7 @@ static void mt25q_reset_memory(SNORDriver *devp) {
      rejected because shorter than 8 bits. If the device is in multiple
      bits mode then the commands are accepted and the device is reset to
      one bit mode.*/
-#if MT25Q_BUS_MODE == MT25Q_BUS_MODE_WSPI4L
+
   /* 4x MT25Q_CMD_RESET_ENABLE command.*/
   static const wspi_command_t cmd_reset_enable_4 = {
     .cmd              = MT25Q_CMD_RESET_ENABLE,
@@ -277,10 +278,10 @@ static void mt25q_reset_memory(SNORDriver *devp) {
 
   wspiCommand(devp->config->busp, &cmd_reset_enable_4);
   wspiCommand(devp->config->busp, &cmd_reset_memory_4);
-#else
+
   /* 2x MT25Q_CMD_RESET_ENABLE command.*/
   static const wspi_command_t cmd_reset_enable_2 = {
-    .cfg              = WSPI_CFG_CMD(MT25Q_CMD_RESET_ENABLE) |
+    .cfg              = MT25Q_CMD_RESET_ENABLE |
                         WSPI_CFG_CMD_MODE_TWO_LINES,
     .addr             = 0,
     .alt              = 0,
@@ -289,7 +290,7 @@ static void mt25q_reset_memory(SNORDriver *devp) {
 
   /* 2x MT25Q_CMD_RESET_MEMORY command.*/
   static const wspi_command_t cmd_reset_memory_2 = {
-    .cfg              = WSPI_CFG_CMD(MT25Q_CMD_RESET_MEMORY) |
+    .cfg              = MT25Q_CMD_RESET_MEMORY |
                         WSPI_CFG_CMD_MODE_TWO_LINES,
     .addr             = 0,
     .alt              = 0,
@@ -298,7 +299,6 @@ static void mt25q_reset_memory(SNORDriver *devp) {
 
   wspiCommand(devp->config->busp, &cmd_reset_enable_2);
   wspiCommand(devp->config->busp, &cmd_reset_memory_2);
-#endif
 
   /* Now the device should be in one bit mode for sure and we perform a
      device reset.*/
@@ -325,7 +325,7 @@ void snor_device_init(SNORDriver *devp) {
 #else /* SNOR_BUS_DRIVER == SNOR_BUS_DRIVER_WSPI */
   /* Attempting a reset of the XIP mode, it could be in an unexpected state
      because a CPU reset does not reset the memory too.*/
-  snor_reset_xip(devp);
+  //snor_reset_xip(devp);
 
   /* Attempting a reset of the device, it could be in an unexpected state
      because a CPU reset does not reset the memory too.*/
@@ -558,6 +558,10 @@ void snor_activate_xip(SNORDriver *devp) {
                1, flash_status_xip);
 }
 
+/*
+ * TODO verify
+ */
+#if 0
 void snor_reset_xip(SNORDriver *devp) {
   static const uint8_t flash_conf[1] = {
     (MT25Q_READ_DUMMY_CYCLES << 4U) | 0x0FU
@@ -596,6 +600,7 @@ void snor_reset_xip(SNORDriver *devp) {
   bus_cmd_send(devp->config->busp, MT25Q_CMD_WRITE_V_CONF_REGISTER,
                1, flash_conf);
 }
+#endif
 #endif /* SNOR_BUS_DRIVER == SNOR_BUS_DRIVER_WSPI */
 
 /** @} */

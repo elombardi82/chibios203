@@ -89,31 +89,31 @@
 #define STM32_PLL1_Q_ENABLED                TRUE
 #define STM32_PLL1_R_ENABLED                TRUE
 #define STM32_PLL1_DIVM_VALUE               2
-#define STM32_PLL1_DIVN_VALUE               38
+#define STM32_PLL1_DIVN_VALUE               12
 #define STM32_PLL1_FRACN_VALUE              0
 #define STM32_PLL1_DIVP_VALUE               2
-#define STM32_PLL1_DIVQ_VALUE               16
-#define STM32_PLL1_DIVR_VALUE               8
+#define STM32_PLL1_DIVQ_VALUE               2
+#define STM32_PLL1_DIVR_VALUE               2
 #define STM32_PLL2_ENABLED                  TRUE
 #define STM32_PLL2_P_ENABLED                TRUE
 #define STM32_PLL2_Q_ENABLED                TRUE
 #define STM32_PLL2_R_ENABLED                TRUE
 #define STM32_PLL2_DIVM_VALUE               2
-#define STM32_PLL2_DIVN_VALUE               38
+#define STM32_PLL2_DIVN_VALUE               12
 #define STM32_PLL2_FRACN_VALUE              0
-#define STM32_PLL2_DIVP_VALUE               40
-#define STM32_PLL2_DIVQ_VALUE               8
-#define STM32_PLL2_DIVR_VALUE               8
+#define STM32_PLL2_DIVP_VALUE               2
+#define STM32_PLL2_DIVQ_VALUE               2
+#define STM32_PLL2_DIVR_VALUE               2
 #define STM32_PLL3_ENABLED                  TRUE
 #define STM32_PLL3_P_ENABLED                TRUE
 #define STM32_PLL3_Q_ENABLED                TRUE
 #define STM32_PLL3_R_ENABLED                TRUE
 #define STM32_PLL3_DIVM_VALUE               2
-#define STM32_PLL3_DIVN_VALUE               38
+#define STM32_PLL3_DIVN_VALUE               12
 #define STM32_PLL3_FRACN_VALUE              0
-#define STM32_PLL3_DIVP_VALUE               8
-#define STM32_PLL3_DIVQ_VALUE               8
-#define STM32_PLL3_DIVR_VALUE               8
+#define STM32_PLL3_DIVP_VALUE               2
+#define STM32_PLL3_DIVQ_VALUE               2
+#define STM32_PLL3_DIVR_VALUE               2
 
 /*
  * Core clocks dynamic settings (can be changed at runtime).
@@ -368,7 +368,7 @@
  */
 #define STM32_SERIAL_USE_USART1             FALSE
 #define STM32_SERIAL_USE_USART2             FALSE
-#define STM32_SERIAL_USE_USART3             TRUE
+#define STM32_SERIAL_USE_USART3             FALSE
 #define STM32_SERIAL_USE_UART4              FALSE
 #define STM32_SERIAL_USE_UART5              FALSE
 #define STM32_SERIAL_USE_USART6             FALSE

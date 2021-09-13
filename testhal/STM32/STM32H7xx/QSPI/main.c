@@ -78,6 +78,23 @@ static const wspi_command_t cmd_reset_memory_1 = {
   .dummy            = 0
 };
 
+static const wspi_command_t cmd_reset_enable_4 = {
+  .cmd              = MT25Q_CMD_RESET_ENABLE,
+  .cfg              = WSPI_CFG_CMD_MODE_FOUR_LINES,
+  .addr             = 0,
+  .alt              = 0,
+  .dummy            = 0
+};
+
+/* 1x MT25Q_CMD_RESET_MEMORY command.*/
+static const wspi_command_t cmd_reset_memory_4 = {
+  .cmd              = MT25Q_CMD_RESET_MEMORY,
+  .cfg              = WSPI_CFG_CMD_MODE_FOUR_LINES,
+  .addr             = 0,
+  .alt              = 0,
+  .dummy            = 0
+};
+
 static const wspi_command_t mt25q_cmd_read_id = {
   .cmd              = MT25Q_CMD_READ_ID,
   .cfg              = 0U |
@@ -205,6 +222,7 @@ int main(void) {
   halInit();
   chSysInit();
 
+  /* For testing purpose */
   SCB_DisableDCache();
   SCB_DisableICache();
 
@@ -218,15 +236,18 @@ int main(void) {
   }
 
   /*
-   * Activates the serial driver 1 using the driver default configuration.
+   * Activates the QSPID1.
    */
-  sdStart(&SD3, NULL);
   wspiStart(&WSPID1, &WSPIcfg1);
+
+  /* Resetting in SINGLE and QUAD MODE */
+  wspiCommand(&WSPID1, &cmd_reset_enable_4);
+  wspiCommand(&WSPID1, &cmd_reset_memory_4);
 
   wspiCommand(&WSPID1, &cmd_reset_enable_1);
   wspiCommand(&WSPID1, &cmd_reset_memory_1);
 
-  /* Reading device ID and unique ID.*/
+  /* Reading device ID and unique ID in SINGLE LINE mode.*/
   wspiReceive(&WSPID1, &mt25q_cmd_read_id, 20, receive);
 
   /* Resetting receive */

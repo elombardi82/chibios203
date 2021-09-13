@@ -33,7 +33,7 @@
  * @name    Device capabilities
  * @{
  */
-#define SNOR_DEVICE_SUPPORTS_XIP            TRUE
+#define SNOR_DEVICE_SUPPORTS_XIP            FALSE
 /** @} */
 
 /**
