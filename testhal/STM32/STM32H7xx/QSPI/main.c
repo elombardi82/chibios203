@@ -167,7 +167,7 @@ static const wspi_command_t mt25q_cmd_page_program = {
                       WSPI_CFG_ALT_MODE_NONE           |
                       WSPI_CFG_DATA_MODE_FOUR_LINES    |
                       WSPI_CFG_ADDR_SIZE_24,
-  .addr             = 0,
+  .addr             = 0x8000,
   .alt              = 0,
   .dummy            = 0
 };
@@ -181,7 +181,7 @@ static const wspi_command_t mt25q_cmd_fast_read = {
                       WSPI_CFG_DATA_MODE_FOUR_LINES    |
                       WSPI_CFG_CMD_SIZE_8              |
                       WSPI_CFG_ADDR_SIZE_24,
-  .addr             = 0,
+  .addr             = 0x8000,
   .alt              = 0,
   .dummy            = 10
 };
@@ -196,12 +196,8 @@ static THD_FUNCTION(Thread1, arg) {
   (void)arg;
   chRegSetThreadName("blinker");
   while (true) {
-    palSetLine(LINE_LED_GREEN);
-    chThdSleepMilliseconds(50);
     palSetLine(LINE_LED_RED);
     chThdSleepMilliseconds(200);
-    palClearLine(LINE_LED_GREEN);
-    chThdSleepMilliseconds(50);
     palClearLine(LINE_LED_RED);
     chThdSleepMilliseconds(200);
   }
@@ -239,6 +235,11 @@ int main(void) {
    * Activates the QSPID1.
    */
   wspiStart(&WSPID1, &WSPIcfg1);
+
+  /*
+   * Creates the example thread.
+   */
+  chThdCreateStatic(waThread1, sizeof(waThread1), NORMALPRIO+1, Thread1, NULL);
 
   /* Resetting in SINGLE and QUAD MODE */
   wspiCommand(&WSPID1, &cmd_reset_enable_4);
@@ -297,15 +298,11 @@ int main(void) {
   wspiReceive(&WSPID1, &mt25q_cmd_fast_read, 128, receive);
 
   /*
-   * Creates the example thread.
-   */
-  chThdCreateStatic(waThread1, sizeof(waThread1), NORMALPRIO+1, Thread1, NULL);
-
-  /*
    * Normal main() thread activity, in this demo it does nothing except
    * sleeping in a loop and check the button state.
    */
   while (true) {
+    palToggleLine(LINE_LED_GREEN);
     chThdSleepMilliseconds(500);
   }
 }
