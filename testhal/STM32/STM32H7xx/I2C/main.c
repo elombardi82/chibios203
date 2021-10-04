@@ -27,11 +27,11 @@
 static uint8_t i2c_tx_buf[I2C_BUF_SIZE];
 static uint8_t i2c_rx_buf[I2C_BUF_SIZE];
 
-/* I2C config */
+/* I2C config: 100 kHz */
 static const I2CConfig i2c_cfg = {
   //STM32_TIMINGR_PRESC(15U) |
-  STM32_TIMINGR_SCLDEL(7U) | //STM32_TIMINGR_SDADEL(0U) |
-  STM32_TIMINGR_SCLH(124U)  | STM32_TIMINGR_SCLL(187U),
+  STM32_TIMINGR_SCLDEL(4U) | //STM32_TIMINGR_SDADEL(0U) |
+  STM32_TIMINGR_SCLH(72U)  | STM32_TIMINGR_SCLL(108U),
   0,
   0
 };
