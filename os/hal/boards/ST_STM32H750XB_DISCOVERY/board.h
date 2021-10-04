@@ -213,13 +213,13 @@
 #define GPIOI_MII_RX_ER             10U
 #define GPIOI_PIN11                 11U
 #define GPIOI_LCD_HSYNC             12U
-#define GPIOI_LED_GREEN             13U
+#define GPIOI_LED_RED               13U
 #define GPIOI_LCD_CLK               14U
 #define GPIOI_LCD_R0                15U
 
 #define GPIOJ_LCD_R1                0U
 #define GPIOJ_LCD_R2                1U
-#define GPIOJ_LED_RED               2U
+#define GPIOJ_LED_GREEN             2U
 #define GPIOJ_LCD_R4                3U
 #define GPIOJ_LCD_R5                4U
 #define GPIOJ_LCD_R6                5U
@@ -364,12 +364,12 @@
 #define LINE_LCD_VSYNC              PAL_LINE(GPIOI, 9U)
 #define LINE_MII_RX_ER              PAL_LINE(GPIOI, 10U)
 #define LINE_LCD_HSYNC              PAL_LINE(GPIOI, 12U)
-#define LINE_LED_GREEN              PAL_LINE(GPIOI, 13U)
+#define LINE_LED_RED                PAL_LINE(GPIOI, 13U)
 #define LINE_LCD_CLK                PAL_LINE(GPIOI, 14U)
 #define LINE_LCD_R0                 PAL_LINE(GPIOI, 15U)
 #define LINE_LCD_R1                 PAL_LINE(GPIOJ, 0U)
 #define LINE_LCD_R2                 PAL_LINE(GPIOJ, 1U)
-#define LINE_LED_RED                PAL_LINE(GPIOJ, 2U)
+#define LINE_LED_GREEN              PAL_LINE(GPIOJ, 2U)
 #define LINE_LCD_R4                 PAL_LINE(GPIOJ, 3U)
 #define LINE_LCD_R5                 PAL_LINE(GPIOJ, 4U)
 #define LINE_LCD_R6                 PAL_LINE(GPIOJ, 5U)
@@ -1381,7 +1381,7 @@
  * PI10 - MII_RX_ER                 (alternate 11).
  * PI11 - PIN11                     (input floating).
  * PI12 - LCD_HSYNC                 (alternate 14).
- * PI13 - LED_GREEN                 (output pushpull maximum).
+ * PI13 - LED_RED                   (output pushpull maximum).
  * PI14 - LCD_CLK                   (alternate 14).
  * PI15 - LCD_R0                    (alternate 14).
  */
@@ -1398,7 +1398,7 @@
                                      PIN_MODE_ALTERNATE(GPIOI_MII_RX_ER) |  \
                                      PIN_MODE_INPUT(GPIOI_PIN11) |          \
                                      PIN_MODE_ALTERNATE(GPIOI_LCD_HSYNC) |  \
-                                     PIN_MODE_OUTPUT(GPIOI_LED_GREEN) |     \
+                                     PIN_MODE_OUTPUT(GPIOI_LED_RED) |       \
                                      PIN_MODE_ALTERNATE(GPIOI_LCD_CLK) |    \
                                      PIN_MODE_ALTERNATE(GPIOI_LCD_R0))
 #define VAL_GPIOI_OTYPER            (PIN_OTYPE_PUSHPULL(GPIOI_LCD_G5) |     \
@@ -1414,7 +1414,7 @@
                                      PIN_OTYPE_PUSHPULL(GPIOI_MII_RX_ER) |  \
                                      PIN_OTYPE_PUSHPULL(GPIOI_PIN11) |      \
                                      PIN_OTYPE_PUSHPULL(GPIOI_LCD_HSYNC) |  \
-                                     PIN_OTYPE_PUSHPULL(GPIOI_LED_GREEN) |  \
+                                     PIN_OTYPE_PUSHPULL(GPIOI_LED_RED) |    \
                                      PIN_OTYPE_PUSHPULL(GPIOI_LCD_CLK) |    \
                                      PIN_OTYPE_PUSHPULL(GPIOI_LCD_R0))
 #define VAL_GPIOI_OSPEEDR           (PIN_OSPEED_HIGH(GPIOI_LCD_G5) |        \
@@ -1430,7 +1430,7 @@
                                      PIN_OSPEED_HIGH(GPIOI_MII_RX_ER) |     \
                                      PIN_OSPEED_VERYLOW(GPIOI_PIN11) |      \
                                      PIN_OSPEED_HIGH(GPIOI_LCD_HSYNC) |     \
-                                     PIN_OSPEED_HIGH(GPIOI_LED_GREEN) |     \
+                                     PIN_OSPEED_HIGH(GPIOI_LED_RED) |       \
                                      PIN_OSPEED_HIGH(GPIOI_LCD_CLK) |       \
                                      PIN_OSPEED_HIGH(GPIOI_LCD_R0))
 #define VAL_GPIOI_PUPDR             (PIN_PUPDR_FLOATING(GPIOI_LCD_G5) |     \
@@ -1446,7 +1446,7 @@
                                      PIN_PUPDR_FLOATING(GPIOI_MII_RX_ER) |  \
                                      PIN_PUPDR_FLOATING(GPIOI_PIN11) |      \
                                      PIN_PUPDR_FLOATING(GPIOI_LCD_HSYNC) |  \
-                                     PIN_PUPDR_PULLDOWN(GPIOI_LED_GREEN) |  \
+                                     PIN_PUPDR_PULLUP(GPIOI_LED_RED) |      \
                                      PIN_PUPDR_FLOATING(GPIOI_LCD_CLK) |    \
                                      PIN_PUPDR_FLOATING(GPIOI_LCD_R0))
 #define VAL_GPIOI_ODR               (PIN_ODR_HIGH(GPIOI_LCD_G5) |           \
@@ -1462,7 +1462,7 @@
                                      PIN_ODR_HIGH(GPIOI_MII_RX_ER) |        \
                                      PIN_ODR_HIGH(GPIOI_PIN11) |            \
                                      PIN_ODR_HIGH(GPIOI_LCD_HSYNC) |        \
-                                     PIN_ODR_LOW(GPIOI_LED_GREEN) |         \
+                                     PIN_ODR_HIGH(GPIOI_LED_RED) |          \
                                      PIN_ODR_HIGH(GPIOI_LCD_CLK) |          \
                                      PIN_ODR_HIGH(GPIOI_LCD_R0))
 #define VAL_GPIOI_AFRL              (PIN_AFIO_AF(GPIOI_LCD_G5, 14U) |       \
@@ -1478,7 +1478,7 @@
                                      PIN_AFIO_AF(GPIOI_MII_RX_ER, 11U) |    \
                                      PIN_AFIO_AF(GPIOI_PIN11, 0U) |         \
                                      PIN_AFIO_AF(GPIOI_LCD_HSYNC, 14U) |    \
-                                     PIN_AFIO_AF(GPIOI_LED_GREEN, 0U) |     \
+                                     PIN_AFIO_AF(GPIOI_LED_RED, 0U) |       \
                                      PIN_AFIO_AF(GPIOI_LCD_CLK, 14U) |      \
                                      PIN_AFIO_AF(GPIOI_LCD_R0, 14U))
 
@@ -1487,7 +1487,7 @@
  *
  * PJ0  - LCD_R1                    (alternate 14).
  * PJ1  - LCD_R2                    (alternate 14).
- * PJ2  - LED_RED                   (output pushpull maximum).
+ * PJ2  - LED_GREEN                 (output pushpull maximum).
  * PJ3  - LCD_R4                    (alternate 14).
  * PJ4  - LCD_R5                    (alternate 14).
  * PJ5  - LCD_R6                    (alternate 14).
@@ -1504,7 +1504,7 @@
  */
 #define VAL_GPIOJ_MODER             (PIN_MODE_ALTERNATE(GPIOJ_LCD_R1) |     \
                                      PIN_MODE_ALTERNATE(GPIOJ_LCD_R2) |     \
-                                     PIN_MODE_OUTPUT(GPIOJ_LED_RED) |       \
+                                     PIN_MODE_OUTPUT(GPIOJ_LED_GREEN) |     \
                                      PIN_MODE_ALTERNATE(GPIOJ_LCD_R4) |     \
                                      PIN_MODE_ALTERNATE(GPIOJ_LCD_R5) |     \
                                      PIN_MODE_ALTERNATE(GPIOJ_LCD_R6) |     \
@@ -1520,7 +1520,7 @@
                                      PIN_MODE_ALTERNATE(GPIOJ_LCD_B3))
 #define VAL_GPIOJ_OTYPER            (PIN_OTYPE_PUSHPULL(GPIOJ_LCD_R1) |     \
                                      PIN_OTYPE_PUSHPULL(GPIOJ_LCD_R2) |     \
-                                     PIN_OTYPE_PUSHPULL(GPIOJ_LED_RED) |    \
+                                     PIN_OTYPE_PUSHPULL(GPIOJ_LED_GREEN) |  \
                                      PIN_OTYPE_PUSHPULL(GPIOJ_LCD_R4) |     \
                                      PIN_OTYPE_PUSHPULL(GPIOJ_LCD_R5) |     \
                                      PIN_OTYPE_PUSHPULL(GPIOJ_LCD_R6) |     \
@@ -1536,7 +1536,7 @@
                                      PIN_OTYPE_PUSHPULL(GPIOJ_LCD_B3))
 #define VAL_GPIOJ_OSPEEDR           (PIN_OSPEED_HIGH(GPIOJ_LCD_R1) |        \
                                      PIN_OSPEED_HIGH(GPIOJ_LCD_R2) |        \
-                                     PIN_OSPEED_HIGH(GPIOJ_LED_RED) |       \
+                                     PIN_OSPEED_HIGH(GPIOJ_LED_GREEN) |     \
                                      PIN_OSPEED_HIGH(GPIOJ_LCD_R4) |        \
                                      PIN_OSPEED_HIGH(GPIOJ_LCD_R5) |        \
                                      PIN_OSPEED_HIGH(GPIOJ_LCD_R6) |        \
@@ -1552,7 +1552,7 @@
                                      PIN_OSPEED_HIGH(GPIOJ_LCD_B3))
 #define VAL_GPIOJ_PUPDR             (PIN_PUPDR_FLOATING(GPIOJ_LCD_R1) |     \
                                      PIN_PUPDR_FLOATING(GPIOJ_LCD_R2) |     \
-                                     PIN_PUPDR_PULLDOWN(GPIOJ_LED_RED) |    \
+                                     PIN_PUPDR_PULLUP(GPIOJ_LED_GREEN) |    \
                                      PIN_PUPDR_FLOATING(GPIOJ_LCD_R4) |     \
                                      PIN_PUPDR_FLOATING(GPIOJ_LCD_R5) |     \
                                      PIN_PUPDR_FLOATING(GPIOJ_LCD_R6) |     \
@@ -1568,7 +1568,7 @@
                                      PIN_PUPDR_FLOATING(GPIOJ_LCD_B3))
 #define VAL_GPIOJ_ODR               (PIN_ODR_HIGH(GPIOJ_LCD_R1) |           \
                                      PIN_ODR_HIGH(GPIOJ_LCD_R2) |           \
-                                     PIN_ODR_LOW(GPIOJ_LED_RED) |           \
+                                     PIN_ODR_HIGH(GPIOJ_LED_GREEN) |        \
                                      PIN_ODR_HIGH(GPIOJ_LCD_R4) |           \
                                      PIN_ODR_HIGH(GPIOJ_LCD_R5) |           \
                                      PIN_ODR_HIGH(GPIOJ_LCD_R6) |           \
@@ -1584,7 +1584,7 @@
                                      PIN_ODR_HIGH(GPIOJ_LCD_B3))
 #define VAL_GPIOJ_AFRL              (PIN_AFIO_AF(GPIOJ_LCD_R1, 14U) |       \
                                      PIN_AFIO_AF(GPIOJ_LCD_R2, 14U) |       \
-                                     PIN_AFIO_AF(GPIOJ_LED_RED, 0U) |       \
+                                     PIN_AFIO_AF(GPIOJ_LED_GREEN, 0U) |     \
                                      PIN_AFIO_AF(GPIOJ_LCD_R4, 14U) |       \
                                      PIN_AFIO_AF(GPIOJ_LCD_R5, 14U) |       \
                                      PIN_AFIO_AF(GPIOJ_LCD_R6, 14U) |       \
