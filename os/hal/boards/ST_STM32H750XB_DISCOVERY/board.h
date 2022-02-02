@@ -454,7 +454,7 @@
                                      PIN_MODE_ALTERNATE(GPIOA_MII_MDIO) |   \
                                      PIN_MODE_INPUT(GPIOA_PIN3) |           \
                                      PIN_MODE_INPUT(GPIOA_PIN4) |           \
-                                     PIN_MODE_INPUT(GPIOA_PIN5) |           \
+                                     PIN_MODE_OUTPUT(GPIOA_PIN5) |           \
                                      PIN_MODE_INPUT(GPIOA_PIN6) |           \
                                      PIN_MODE_ALTERNATE(GPIOA_MII_RX_DV) |  \
                                      PIN_MODE_INPUT(GPIOA_PIN8) |           \
@@ -486,7 +486,7 @@
                                      PIN_OSPEED_HIGH(GPIOA_MII_MDIO) |      \
                                      PIN_OSPEED_VERYLOW(GPIOA_PIN3) |       \
                                      PIN_OSPEED_VERYLOW(GPIOA_PIN4) |       \
-                                     PIN_OSPEED_VERYLOW(GPIOA_PIN5) |       \
+                                     PIN_OSPEED_HIGH(GPIOA_PIN5) |       \
                                      PIN_OSPEED_VERYLOW(GPIOA_PIN6) |       \
                                      PIN_OSPEED_HIGH(GPIOA_MII_RX_DV) |     \
                                      PIN_OSPEED_HIGH(GPIOA_PIN8) |          \
@@ -502,7 +502,7 @@
                                      PIN_PUPDR_PULLUP(GPIOA_MII_MDIO) |     \
                                      PIN_PUPDR_FLOATING(GPIOA_PIN3) |       \
                                      PIN_PUPDR_FLOATING(GPIOA_PIN4) |       \
-                                     PIN_PUPDR_FLOATING(GPIOA_PIN5) |       \
+                                     PIN_PUPDR_PULLUP(GPIOA_PIN5) |       \
                                      PIN_PUPDR_FLOATING(GPIOA_PIN6) |       \
                                      PIN_PUPDR_PULLUP(GPIOA_MII_RX_DV) |    \
                                      PIN_PUPDR_FLOATING(GPIOA_PIN8) |       \
@@ -518,7 +518,7 @@
                                      PIN_ODR_HIGH(GPIOA_MII_MDIO) |         \
                                      PIN_ODR_HIGH(GPIOA_PIN3) |             \
                                      PIN_ODR_HIGH(GPIOA_PIN4) |             \
-                                     PIN_ODR_HIGH(GPIOA_PIN5) |             \
+                                     PIN_ODR_LOW(GPIOA_PIN5) |             \
                                      PIN_ODR_HIGH(GPIOA_PIN6) |             \
                                      PIN_ODR_HIGH(GPIOA_MII_RX_DV) |        \
                                      PIN_ODR_HIGH(GPIOA_PIN8) |             \
