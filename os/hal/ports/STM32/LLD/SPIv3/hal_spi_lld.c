@@ -68,12 +68,30 @@ SPIDriver SPID6;
 /* Driver local variables and types.                                         */
 /*===========================================================================*/
 
-static const uint32_t dummytx = STM32_SPI_FILLER_PATTERN;
-static uint32_t dummyrx;
-
 /*===========================================================================*/
 /* Driver local functions.                                                   */
 /*===========================================================================*/
+
+static void spi_lld_configure(SPIDriver *spip) {
+
+  /* SPI setup and enable.*/
+  spip->spi->CR1  = 0U;
+  spip->spi->CR2  = 0U;
+  spip->spi->IER  = SPI_IER_OVRIE;
+  spip->spi->IFCR = 0xFFFFFFFFU;
+  spip->spi->CFG1 = (spip->config->cfg1 & ~SPI_CFG1_FTHLV_Msk) |
+                    SPI_CFG1_RXDMAEN | SPI_CFG1_TXDMAEN;
+  spip->spi->CFG2 = (spip->config->cfg2 | SPI_CFG2_MASTER | SPI_CFG2_SSOE) &
+                     ~SPI_CFG2_COMM_Msk;
+}
+
+static void spi_lld_start_transfer(SPIDriver *spip) {
+  uint32_t cr1;
+
+  cr1 = spip->spi->CR1;
+  spip->spi->CR1 = cr1 | SPI_CR1_SPE;
+  spip->spi->CR1 = cr1 | SPI_CR1_SPE | SPI_CR1_CSTART;
+}
 
 static void spi_lld_wait_complete(SPIDriver *spip) {
 
@@ -82,7 +100,126 @@ static void spi_lld_wait_complete(SPIDriver *spip) {
   spip->spi->IFCR = 0xFFFFFFFF;
 }
 
+/**
+ * @brief   Stopping the SPI transaction quick and dirty.
+ */
+static void spi_lld_stop_abort(SPIDriver *spip) {
+
+  /* Stopping DMAs and waiting for FIFOs to be empty.*/
+#if defined(STM32_SPI_DMA_REQUIRED) && defined(STM32_SPI_BDMA_REQUIRED)
+  if (spip->is_bdma)
+#endif
 #if defined(STM32_SPI_BDMA_REQUIRED)
+  {
+    bdmaStreamDisable(spip->tx.bdma);
+    bdmaStreamDisable(spip->rx.bdma);
+  }
+#endif
+#if defined(STM32_SPI_DMA_REQUIRED) && defined(STM32_SPI_BDMA_REQUIRED)
+  else
+#endif
+#if defined(STM32_SPI_DMA_REQUIRED)
+  {
+    dmaStreamDisable(spip->tx.dma);
+    dmaStreamDisable(spip->rx.dma);
+  }
+#endif
+
+  /* Resetting SPI, this will stop it for sure and leave it
+     in a clean state.*/
+  if (false) {
+  }
+
+#if STM32_SPI_USE_SPI1
+  else if (&SPID1 == spip) {
+    rccResetSPI1();
+  }
+#endif
+
+#if STM32_SPI_USE_SPI2
+  else if (&SPID2 == spip) {
+    rccResetSPI2();
+  }
+#endif
+
+#if STM32_SPI_USE_SPI3
+  else if (&SPID3 == spip) {
+    rccResetSPI3();
+  }
+#endif
+
+#if STM32_SPI_USE_SPI4
+  else if (&SPID4 == spip) {
+    rccResetSPI4();
+  }
+#endif
+
+#if STM32_SPI_USE_SPI5
+  else if (&SPID5 == spip) {
+    rccResetSPI5();
+  }
+#endif
+
+#if STM32_SPI_USE_SPI6
+  else if (&SPID6 == spip) {
+    rccResetSPI6();
+  }
+#endif
+
+  else {
+    osalDbgAssert(false, "invalid SPI instance");
+  }
+
+  /* Reconfiguring SPI.*/
+  spi_lld_configure(spip);
+}
+
+/**
+ * @brief   Stopping the SPI transaction in the nicest possible way.
+ *
+ * @param[in] spip      pointer to the @p SPIDriver object
+ */
+static void spi_lld_stop_nicely(SPIDriver *spip) {
+
+  /* Stopping DMAs and waiting for FIFOs to be empty.*/
+#if defined(STM32_SPI_DMA_REQUIRED) && defined(STM32_SPI_BDMA_REQUIRED)
+  if (spip->is_bdma)
+#endif
+#if defined(STM32_SPI_BDMA_REQUIRED)
+  {
+    bdmaStreamDisable(spip->tx.bdma);
+
+    /* Waiting for the RX FIFO to become empty.*/
+    while ((spip->spi->SR & (SPI_SR_RXWNE | SPI_SR_RXPLVL)) != 0U) {
+      /* Waiting.*/
+    }
+
+    bdmaStreamDisable(spip->rx.bdma);
+  }
+#endif
+#if defined(STM32_SPI_DMA_REQUIRED) && defined(STM32_SPI_BDMA_REQUIRED)
+  else
+#endif
+#if defined(STM32_SPI_DMA_REQUIRED)
+  {
+    dmaStreamDisable(spip->tx.dma);
+
+    /* Waiting for the RX FIFO to become empty.*/
+    while ((spip->spi->SR & (SPI_SR_RXWNE | SPI_SR_RXPLVL)) != 0U) {
+      /* Waiting.*/
+    }
+
+    dmaStreamDisable(spip->rx.dma);
+  }
+#endif
+
+  /* Stopping SPI.*/
+  spip->spi->CR1 |= SPI_CR1_CSUSP;
+  spi_lld_wait_complete(spip);
+  spip->spi->CR1 &= ~SPI_CR1_SPE;
+}
+
+#if defined(STM32_SPI_BDMA_REQUIRED) || defined(__DOXYGEN__)
 /**
  * @brief   Shared DMA end-of-rx service routine.
  *
@@ -92,13 +229,14 @@ static void spi_lld_wait_complete(SPIDriver *spip) {
 static void spi_lld_serve_bdma_rx_interrupt(SPIDriver *spip, uint32_t flags) {
 
   /* DMA errors handling.*/
-#if defined(STM32_SPI_DMA_ERROR_HOOK)
   if ((flags & STM32_BDMA_ISR_TEIF) != 0U) {
+#if defined(STM32_SPI_DMA_ERROR_HOOK)
     STM32_SPI_DMA_ERROR_HOOK(spip);
-  }
-#else
-  (void)flags;
 #endif
+
+    /* Aborting the transfer.*/
+    spi_lld_stop_abort(spip);
+  }
 
   if (spip->config->circular) {
     if ((flags & STM32_BDMA_ISR_HTIF) != 0U) {
@@ -111,15 +249,10 @@ static void spi_lld_serve_bdma_rx_interrupt(SPIDriver *spip, uint32_t flags) {
     }
   }
   else {
-    /* Stopping SPI.*/
-    spip->spi->CR1 |= SPI_CR1_CSUSP;
+    /* Stopping the transfer.*/
+    (void) spi_lld_stop_nicely(spip);
 
-    /* Stopping DMAs.*/
-    bdmaStreamDisable(spip->tx.bdma);
-    bdmaStreamDisable(spip->rx.bdma);
-
-    /* Portable SPI ISR code defined in the high level driver, note, it is
-       a macro.*/
+    /* Operation finished interrupt.*/
     _spi_isr_code(spip);
   }
 }
@@ -133,19 +266,18 @@ static void spi_lld_serve_bdma_rx_interrupt(SPIDriver *spip, uint32_t flags) {
 static void spi_lld_serve_bdma_tx_interrupt(SPIDriver *spip, uint32_t flags) {
 
   /* DMA errors handling.*/
-#if defined(STM32_SPI_DMA_ERROR_HOOK)
-  (void)spip;
   if ((flags & STM32_BDMA_ISR_TEIF) != 0) {
+#if defined(STM32_SPI_DMA_ERROR_HOOK)
     STM32_SPI_DMA_ERROR_HOOK(spip);
-  }
-#else
-  (void)spip;
-  (void)flags;
 #endif
+
+    /* Aborting the transfer.*/
+    spi_lld_stop_abort(spip);
+  }
 }
 #endif /* defined(STM32_SPI_BDMA_REQUIRED) */
 
-#if defined(STM32_SPI_DMA_REQUIRED)
+#if defined(STM32_SPI_DMA_REQUIRED) || defined(__DOXYGEN__)
 /**
  * @brief   Shared DMA end-of-rx service routine.
  *
@@ -155,13 +287,15 @@ static void spi_lld_serve_bdma_tx_interrupt(SPIDriver *spip, uint32_t flags) {
 static void spi_lld_serve_dma_rx_interrupt(SPIDriver *spip, uint32_t flags) {
 
   /* DMA errors handling.*/
-#if defined(STM32_SPI_DMA_ERROR_HOOK)
   if ((flags & (STM32_DMA_ISR_TEIF | STM32_DMA_ISR_DMEIF)) != 0U) {
+#if defined(STM32_SPI_DMA_ERROR_HOOK)
     STM32_SPI_DMA_ERROR_HOOK(spip);
-  }
-#else
-  (void)flags;
 #endif
+
+    /* Aborting the transfer.*/
+    spi_lld_stop_abort(spip);
+
+  }
 
   if (spip->config->circular) {
     if ((flags & STM32_DMA_ISR_HTIF) != 0U) {
@@ -174,15 +308,10 @@ static void spi_lld_serve_dma_rx_interrupt(SPIDriver *spip, uint32_t flags) {
     }
   }
   else {
-    /* Stopping SPI.*/
-    spip->spi->CR1 |= SPI_CR1_CSUSP;
+    /* Stopping the transfer.*/
+    (void) spi_lld_stop_nicely(spip);
 
-    /* Stopping DMAs.*/
-    dmaStreamDisable(spip->tx.dma);
-    dmaStreamDisable(spip->rx.dma);
-
-    /* Portable SPI ISR code defined in the high level driver, note, it is
-       a macro.*/
+    /* Operation finished interrupt.*/
     _spi_isr_code(spip);
   }
 }
@@ -196,15 +325,14 @@ static void spi_lld_serve_dma_rx_interrupt(SPIDriver *spip, uint32_t flags) {
 static void spi_lld_serve_dma_tx_interrupt(SPIDriver *spip, uint32_t flags) {
 
   /* DMA errors handling.*/
-#if defined(STM32_SPI_DMA_ERROR_HOOK)
-  (void)spip;
   if ((flags & (STM32_DMA_ISR_TEIF | STM32_DMA_ISR_DMEIF)) != 0) {
+#if defined(STM32_SPI_DMA_ERROR_HOOK)
     STM32_SPI_DMA_ERROR_HOOK(spip);
-  }
-#else
-  (void)spip;
-  (void)flags;
 #endif
+
+    /* Aborting the transfer.*/
+    spi_lld_stop_abort(spip);
+  }
 }
 #endif /* defined(STM32_SPI_DMA_REQUIRED) */
 
@@ -220,9 +348,56 @@ static void spi_lld_serve_interrupt(SPIDriver *spip) {
   spip->spi->IFCR = sr;
 
   if ((sr & SPI_SR_OVR) != 0U) {
-    /* CHTODO: fault notification.*/
+    /* Aborting the transfer.*/
+    spi_lld_stop_abort(spip);
   }
 }
+
+#if defined(STM32_SPI_DMA_REQUIRED) || defined(__DOXYGEN__)
+/**
+ * @brief   DMA streams allocation.
+ *
+ * @param[in] spip      pointer to the @p SPIDriver object
+ * @param[in] rxstream  stream to be allocated for RX
+ * @param[in] txstream  stream to be allocated for TX
+ * @param[in] priority  streams IRQ priority
+ * @return              The operation status.
+ */
+static void spi_lld_get_dma(SPIDriver *spip, uint32_t rxstream,
+                             uint32_t txstream, uint32_t priority) {
+
+  spip->rx.dma = dmaStreamAllocI(rxstream, priority,
+                                 (stm32_dmaisr_t)spi_lld_serve_dma_rx_interrupt,
+                                 (void *)spip);
+
+  spip->tx.dma = dmaStreamAllocI(txstream, priority,
+                                 (stm32_dmaisr_t)spi_lld_serve_dma_tx_interrupt,
+                                 (void *)spip);
+}
+#endif
+
+#if defined(STM32_SPI_BDMA_REQUIRED) || defined(__DOXYGEN__)
+/**
+ * @brief   BDMA streams allocation.
+ *
+ * @param[in] spip      pointer to the @p SPIDriver object
+ * @param[in] rxstream  stream to be allocated for RX
+ * @param[in] txstream  stream to be allocated for TX
+ * @param[in] priority  streams IRQ priority
+ * @return              The operation status.
+ */
+static void spi_lld_get_bdma(SPIDriver *spip, uint32_t rxstream,
+                              uint32_t txstream, uint32_t priority) {
+
+  spip->rx.bdma = bdmaStreamAllocI(rxstream, priority,
+                                   (stm32_bdmaisr_t)spi_lld_serve_bdma_rx_interrupt,
+                                   (void *)spip);
+
+  spip->tx.bdma = bdmaStreamAllocI(txstream, priority,
+                                   (stm32_bdmaisr_t)spi_lld_serve_bdma_tx_interrupt,
+                                   (void *)spip);
+}
+#endif
 
 /*===========================================================================*/
 /* Driver interrupt handlers.                                                */
@@ -506,110 +681,110 @@ void spi_lld_init(void) {
 void spi_lld_start(SPIDriver *spip) {
   uint32_t dsize;
 
+  /* Resetting TX pattern source.*/
+  spip->txsource = (uint32_t)STM32_SPI_FILLER_PATTERN;
+
   /* If in stopped state then enables the SPI and DMA clocks.*/
   if (spip->state == SPI_STOP) {
+    if (false) {
+    }
+
 #if STM32_SPI_USE_SPI1
-    if (&SPID1 == spip) {
-      spip->rx.dma = dmaStreamAllocI(STM32_SPI_SPI1_RX_DMA_STREAM,
-                                     STM32_SPI_SPI1_IRQ_PRIORITY,
-                                     (stm32_dmaisr_t)spi_lld_serve_dma_rx_interrupt,
-                                     (void *)spip);
-      osalDbgAssert(spip->rx.dma != NULL, "unable to allocate stream");
-      spip->tx.dma = dmaStreamAllocI(STM32_SPI_SPI1_TX_DMA_STREAM,
-                                     STM32_SPI_SPI1_IRQ_PRIORITY,
-                                     (stm32_dmaisr_t)spi_lld_serve_dma_tx_interrupt,
-                                     (void *)spip);
-      osalDbgAssert(spip->tx.dma != NULL, "unable to allocate stream");
-      rccEnableSPI1(true);
+    else if (&SPID1 == spip) {
+      spi_lld_get_dma(spip,
+                      STM32_SPI_SPI1_RX_DMA_STREAM,
+                      STM32_SPI_SPI1_TX_DMA_STREAM,
+                      STM32_SPI_SPI1_IRQ_PRIORITY);
+
       dmaSetRequestSource(spip->rx.dma, STM32_DMAMUX1_SPI1_RX);
       dmaSetRequestSource(spip->tx.dma, STM32_DMAMUX1_SPI1_TX);
+
+      rccEnableSPI1(true);
+      rccResetSPI1();
     }
 #endif
+
 #if STM32_SPI_USE_SPI2
-    if (&SPID2 == spip) {
-      spip->rx.dma = dmaStreamAllocI(STM32_SPI_SPI2_RX_DMA_STREAM,
-                                     STM32_SPI_SPI2_IRQ_PRIORITY,
-                                     (stm32_dmaisr_t)spi_lld_serve_dma_rx_interrupt,
-                                     (void *)spip);
-      osalDbgAssert(spip->rx.dma != NULL, "unable to allocate stream");
-      spip->tx.dma = dmaStreamAllocI(STM32_SPI_SPI2_TX_DMA_STREAM,
-                                     STM32_SPI_SPI2_IRQ_PRIORITY,
-                                     (stm32_dmaisr_t)spi_lld_serve_dma_tx_interrupt,
-                                     (void *)spip);
-      osalDbgAssert(spip->tx.dma != NULL, "unable to allocate stream");
-      rccEnableSPI2(true);
+    else if (&SPID2 == spip) {
+      spi_lld_get_dma(spip,
+                      STM32_SPI_SPI2_RX_DMA_STREAM,
+                      STM32_SPI_SPI2_TX_DMA_STREAM,
+                      STM32_SPI_SPI2_IRQ_PRIORITY);
+
       dmaSetRequestSource(spip->rx.dma, STM32_DMAMUX1_SPI2_RX);
       dmaSetRequestSource(spip->tx.dma, STM32_DMAMUX1_SPI2_TX);
-    }
+
+      rccEnableSPI2(true);
+      rccResetSPI2();
+}
 #endif
+
 #if STM32_SPI_USE_SPI3
-    if (&SPID3 == spip) {
-      spip->rx.dma = dmaStreamAllocI(STM32_SPI_SPI3_RX_DMA_STREAM,
-                                     STM32_SPI_SPI3_IRQ_PRIORITY,
-                                     (stm32_dmaisr_t)spi_lld_serve_dma_rx_interrupt,
-                                     (void *)spip);
-      osalDbgAssert(spip->rx.dma != NULL, "unable to allocate stream");
-      spip->tx.dma = dmaStreamAllocI(STM32_SPI_SPI3_TX_DMA_STREAM,
-                                     STM32_SPI_SPI3_IRQ_PRIORITY,
-                                     (stm32_dmaisr_t)spi_lld_serve_dma_tx_interrupt,
-                                     (void *)spip);
-      osalDbgAssert(spip->tx.dma != NULL, "unable to allocate stream");
-      rccEnableSPI3(true);
+    else if (&SPID3 == spip) {
+      spi_lld_get_dma(spip,
+                      STM32_SPI_SPI3_RX_DMA_STREAM,
+                      STM32_SPI_SPI3_TX_DMA_STREAM,
+                      STM32_SPI_SPI3_IRQ_PRIORITY);
+
       dmaSetRequestSource(spip->rx.dma, STM32_DMAMUX1_SPI3_RX);
       dmaSetRequestSource(spip->tx.dma, STM32_DMAMUX1_SPI3_TX);
+
+      rccEnableSPI3(true);
+      rccResetSPI3();
     }
 #endif
+
 #if STM32_SPI_USE_SPI4
-    if (&SPID4 == spip) {
-      spip->rx.dma = dmaStreamAllocI(STM32_SPI_SPI4_RX_DMA_STREAM,
-                                     STM32_SPI_SPI4_IRQ_PRIORITY,
-                                     (stm32_dmaisr_t)spi_lld_serve_dma_rx_interrupt,
-                                     (void *)spip);
-      osalDbgAssert(spip->rx.dma != NULL, "unable to allocate stream");
-      spip->tx.dma = dmaStreamAllocI(STM32_SPI_SPI4_TX_DMA_STREAM,
-                                     STM32_SPI_SPI4_IRQ_PRIORITY,
-                                     (stm32_dmaisr_t)spi_lld_serve_dma_tx_interrupt,
-                                     (void *)spip);
-      osalDbgAssert(spip->tx.dma != NULL, "unable to allocate stream");
-      rccEnableSPI4(true);
+    else if (&SPID4 == spip) {
+      spi_lld_get_dma(spip,
+                      STM32_SPI_SPI4_RX_DMA_STREAM,
+                      STM32_SPI_SPI4_TX_DMA_STREAM,
+                      STM32_SPI_SPI4_IRQ_PRIORITY);
+      if (msg != HAL_RET_SUCCESS) {
+        return msg;
+      }
+
       dmaSetRequestSource(spip->rx.dma, STM32_DMAMUX1_SPI4_RX);
       dmaSetRequestSource(spip->tx.dma, STM32_DMAMUX1_SPI4_TX);
+
+      rccEnableSPI4(true);
+      rccResetSPI4();
     }
 #endif
+
 #if STM32_SPI_USE_SPI5
-    if (&SPID5 == spip) {
-      spip->rx.dma = dmaStreamAllocI(STM32_SPI_SPI5_RX_DMA_STREAM,
-                                     STM32_SPI_SPI5_IRQ_PRIORITY,
-                                     (stm32_dmaisr_t)spi_lld_serve_dma_rx_interrupt,
-                                     (void *)spip);
-      osalDbgAssert(spip->rx.dma != NULL, "unable to allocate stream");
-      spip->tx.dma = dmaStreamAllocI(STM32_SPI_SPI5_TX_DMA_STREAM,
-                                     STM32_SPI_SPI5_IRQ_PRIORITY,
-                                     (stm32_dmaisr_t)spi_lld_serve_dma_tx_interrupt,
-                                     (void *)spip);
-      osalDbgAssert(spip->tx.dma != NULL, "unable to allocate stream");
-      rccEnableSPI5(true);
+    else if (&SPID5 == spip) {
+      spi_lld_get_dma(spip,
+                      STM32_SPI_SPI5_RX_DMA_STREAM,
+                      STM32_SPI_SPI5_TX_DMA_STREAM,
+                      STM32_SPI_SPI5_IRQ_PRIORITY);
+
       dmaSetRequestSource(spip->rx.dma, STM32_DMAMUX1_SPI5_RX);
       dmaSetRequestSource(spip->tx.dma, STM32_DMAMUX1_SPI5_TX);
+
+      rccEnableSPI5(true);
+      rccResetSPI5();
     }
 #endif
+
 #if STM32_SPI_USE_SPI6
-    if (&SPID6 == spip) {
-      spip->rx.bdma = bdmaStreamAllocI(STM32_SPI_SPI6_RX_BDMA_STREAM,
-                                      STM32_SPI_SPI6_IRQ_PRIORITY,
-                                      (stm32_dmaisr_t)spi_lld_serve_bdma_rx_interrupt,
-                                      (void *)spip);
-      osalDbgAssert(spip->rx.dma != NULL, "unable to allocate stream");
-      spip->tx.bdma = bdmaStreamAllocI(STM32_SPI_SPI6_TX_BDMA_STREAM,
-                                      STM32_SPI_SPI6_IRQ_PRIORITY,
-                                      (stm32_dmaisr_t)spi_lld_serve_bdma_tx_interrupt,
-                                      (void *)spip);
-      osalDbgAssert(spip->tx.dma != NULL, "unable to allocate stream");
-      rccEnableSPI6(true);
+    else if (&SPID6 == spip) {
+      spi_lld_get_bdma(spip,
+                       STM32_SPI_SPI6_RX_BDMA_STREAM,
+                       STM32_SPI_SPI6_TX_BDMA_STREAM,
+                       STM32_SPI_SPI6_IRQ_PRIORITY);
+
       bdmaSetRequestSource(spip->rx.bdma, STM32_DMAMUX2_SPI6_RX);
       bdmaSetRequestSource(spip->tx.bdma, STM32_DMAMUX2_SPI6_TX);
+
+      rccEnableSPI6(true);
+      rccResetSPI6();
     }
 #endif
+
+    else {
+      osalDbgAssert(false, "invalid SPI instance");
+    }
 
     /* DMA setup.*/
 #if defined(STM32_SPI_DMA_REQUIRED) && defined(STM32_SPI_BDMA_REQUIRED)
@@ -708,16 +883,7 @@ void spi_lld_start(SPIDriver *spip) {
 #endif
 
   /* SPI setup and enable.*/
-  spip->spi->CR1 &= ~SPI_CR1_SPE;
-  spip->spi->CR1  = SPI_CR1_MASRX;
-  spip->spi->CR2  = 0U;
-  spip->spi->CFG1 = (spip->config->cfg1 & ~SPI_CFG1_FTHLV_Msk) |
-                    SPI_CFG1_RXDMAEN | SPI_CFG1_TXDMAEN;
-  spip->spi->CFG2 = (spip->config->cfg2 | SPI_CFG2_MASTER | SPI_CFG2_SSOE) &
-                    ~SPI_CFG2_COMM_Msk;
-  spip->spi->IER  = SPI_IER_OVRIE;
-  spip->spi->IFCR = 0xFFFFFFFFU;
-  spip->spi->CR1 |= SPI_CR1_SPE;
+  spi_lld_configure(spip);
 }
 
 /**
@@ -732,13 +898,9 @@ void spi_lld_stop(SPIDriver *spip) {
   /* If in ready state then disables the SPI clock.*/
   if (spip->state == SPI_READY) {
 
-    /* SPI disable.*/
-    spip->spi->CR1 &= ~SPI_CR1_SPE;
-    spip->spi->CR1  = 0U;
-    spip->spi->CR2  = 0U;
-    spip->spi->CFG1 = 0U;
-    spip->spi->CFG2 = 0U;
-    spip->spi->IER  = 0U;
+    /* Just in case this has been called uncleanly.*/
+    (void) spi_lld_stop_abort(spip);
+
 #if defined(STM32_SPI_DMA_REQUIRED) && defined(STM32_SPI_BDMA_REQUIRED)
     if (spip->is_bdma)
 #endif
@@ -758,30 +920,49 @@ void spi_lld_stop(SPIDriver *spip) {
     }
 #endif
 
+    /* Clock shutdown.*/
+    if (false) {
+    }
+
 #if STM32_SPI_USE_SPI1
-    if (&SPID1 == spip)
+    else if (&SPID1 == spip) {
       rccDisableSPI1();
+    }
 #endif
+
 #if STM32_SPI_USE_SPI2
-    if (&SPID2 == spip)
+    else if (&SPID2 == spip) {
       rccDisableSPI2();
+    }
 #endif
+
 #if STM32_SPI_USE_SPI3
-    if (&SPID3 == spip)
+    else if (&SPID3 == spip) {
       rccDisableSPI3();
+    }
 #endif
+
 #if STM32_SPI_USE_SPI4
-    if (&SPID4 == spip)
+    else if (&SPID4 == spip) {
       rccDisableSPI4();
+    }
 #endif
+
 #if STM32_SPI_USE_SPI5
-    if (&SPID5 == spip)
+    else if (&SPID5 == spip) {
       rccDisableSPI5();
+    }
 #endif
+
 #if STM32_SPI_USE_SPI6
-    if (&SPID6 == spip)
+    else if (&SPID6 == spip) {
       rccDisableSPI6();
+    }
 #endif
+
+    else {
+      osalDbgAssert(false, "invalid SPI instance");
+    }
   }
 }
 
@@ -827,16 +1008,18 @@ void spi_lld_ignore(SPIDriver *spip, size_t n) {
 
   osalDbgAssert(n < 65536, "unsupported DMA transfer size");
 
+  spi_lld_wait_complete(spip);
+
 #if defined(STM32_SPI_DMA_REQUIRED) && defined(STM32_SPI_BDMA_REQUIRED)
   if (spip->is_bdma)
 #endif
 #if defined(STM32_SPI_BDMA_REQUIRED)
   {
-    bdmaStreamSetMemory(spip->rx.bdma, &dummyrx);
+    bdmaStreamSetMemory(spip->rx.bdma, &spip->rxsink);
     bdmaStreamSetTransactionSize(spip->rx.bdma, n);
     bdmaStreamSetMode(spip->rx.bdma, spip->rxdmamode);
 
-    bdmaStreamSetMemory(spip->tx.bdma, &dummytx);
+    bdmaStreamSetMemory(spip->tx.bdma, &spip->txsource);
     bdmaStreamSetTransactionSize(spip->tx.bdma, n);
     bdmaStreamSetMode(spip->tx.bdma, spip->txdmamode);
 
@@ -849,11 +1032,11 @@ void spi_lld_ignore(SPIDriver *spip, size_t n) {
 #endif
 #if defined(STM32_SPI_DMA_REQUIRED)
   {
-    dmaStreamSetMemory0(spip->rx.dma, &dummyrx);
+    dmaStreamSetMemory0(spip->rx.dma, &spip->rxsink);
     dmaStreamSetTransactionSize(spip->rx.dma, n);
     dmaStreamSetMode(spip->rx.dma, spip->rxdmamode);
 
-    dmaStreamSetMemory0(spip->tx.dma, &dummytx);
+    dmaStreamSetMemory0(spip->tx.dma, &spip->txsource);
     dmaStreamSetTransactionSize(spip->tx.dma, n);
     dmaStreamSetMode(spip->tx.dma, spip->txdmamode);
 
@@ -862,7 +1045,9 @@ void spi_lld_ignore(SPIDriver *spip, size_t n) {
   }
 #endif
 
-  spip->spi->CR1 |= SPI_CR1_CSTART;
+  spi_lld_start_transfer(spip);
+
+
 }
 
 /**
@@ -922,7 +1107,8 @@ void spi_lld_exchange(SPIDriver *spip, size_t n,
   }
 #endif
 
-  spip->spi->CR1 |= SPI_CR1_CSTART;
+  spi_lld_start_transfer(spip);
+
 }
 
 /**
@@ -949,7 +1135,7 @@ void spi_lld_send(SPIDriver *spip, size_t n, const void *txbuf) {
 #endif
 #if defined(STM32_SPI_BDMA_REQUIRED)
   {
-    bdmaStreamSetMemory(spip->rx.bdma, &dummyrx);
+    bdmaStreamSetMemory(spip->rx.bdma, &spip->rxsink);
     bdmaStreamSetTransactionSize(spip->rx.bdma, n);
     bdmaStreamSetMode(spip->rx.bdma, spip->rxdmamode);
 
@@ -966,7 +1152,7 @@ void spi_lld_send(SPIDriver *spip, size_t n, const void *txbuf) {
 #endif
 #if defined(STM32_SPI_DMA_REQUIRED)
   {
-    dmaStreamSetMemory0(spip->rx.dma, &dummyrx);
+    dmaStreamSetMemory0(spip->rx.dma, &spip->rxsink);
     dmaStreamSetTransactionSize(spip->rx.dma, n);
     dmaStreamSetMode(spip->rx.dma, spip->rxdmamode);
 
@@ -979,7 +1165,9 @@ void spi_lld_send(SPIDriver *spip, size_t n, const void *txbuf) {
   }
 #endif
 
-  spip->spi->CR1 |= SPI_CR1_CSTART;
+  spi_lld_start_transfer(spip);
+
+
 }
 
 /**
@@ -1010,7 +1198,7 @@ void spi_lld_receive(SPIDriver *spip, size_t n, void *rxbuf) {
     bdmaStreamSetTransactionSize(spip->rx.bdma, n);
     bdmaStreamSetMode(spip->rx.bdma, spip->rxdmamode | STM32_BDMA_CR_MINC);
 
-    bdmaStreamSetMemory(spip->tx.bdma, &dummytx);
+    bdmaStreamSetMemory(spip->tx.bdma, &spip->txsource);
     bdmaStreamSetTransactionSize(spip->tx.bdma, n);
     bdmaStreamSetMode(spip->tx.bdma, spip->txdmamode);
 
@@ -1027,7 +1215,7 @@ void spi_lld_receive(SPIDriver *spip, size_t n, void *rxbuf) {
     dmaStreamSetTransactionSize(spip->rx.dma, n);
     dmaStreamSetMode(spip->rx.dma, spip->rxdmamode | STM32_DMA_CR_MINC);
 
-    dmaStreamSetMemory0(spip->tx.dma, &dummytx);
+    dmaStreamSetMemory0(spip->tx.dma, &spip->txsource);
     dmaStreamSetTransactionSize(spip->tx.dma, n);
     dmaStreamSetMode(spip->tx.dma, spip->txdmamode);
 
@@ -1036,10 +1224,11 @@ void spi_lld_receive(SPIDriver *spip, size_t n, void *rxbuf) {
   }
 #endif
 
-  spip->spi->CR1 |= SPI_CR1_CSTART;
+  spi_lld_start_transfer(spip);
+
 }
 
-#if (SPI_SUPPORTS_CIRCULAR == TRUE) || defined(__DOXYGEN__)
+#if 0
 /**
  * @brief   Aborts the ongoing SPI operation, if any.
  *
@@ -1049,32 +1238,29 @@ void spi_lld_receive(SPIDriver *spip, size_t n, void *rxbuf) {
  */
 void spi_lld_abort(SPIDriver *spip) {
 
-  /* Stopping SPI.*/
-  spip->spi->CR1 |= SPI_CR1_CSUSP;
+  /* Stopping everything.*/
+  msg = spi_lld_stop_nicely(spip);
 
-  spi_lld_wait_complete(spip);
-
-  /* Stopping DMAs.*/
+  if (sizep != NULL) {
 #if defined(STM32_SPI_DMA_REQUIRED) && defined(STM32_SPI_BDMA_REQUIRED)
-  if (spip->is_bdma)
+    if (spip->is_bdma)
 #endif
 #if defined(STM32_SPI_BDMA_REQUIRED)
-  {
-    bdmaStreamDisable(spip->tx.bdma);
-    bdmaStreamDisable(spip->rx.bdma);
-  }
+    {
+      *sizep = bdmaStreamGetTransactionSize(spip->rx.bdma);
+    }
 #endif
 #if defined(STM32_SPI_DMA_REQUIRED) && defined(STM32_SPI_BDMA_REQUIRED)
-  else
+    else
 #endif
 #if defined(STM32_SPI_DMA_REQUIRED)
-  {
-    dmaStreamDisable(spip->tx.dma);
-    dmaStreamDisable(spip->rx.dma);
-  }
+    {
+      *sizep = dmaStreamGetTransactionSize(spip->rx.dma);
+    }
 #endif
+  }
 }
-#endif /* SPI_SUPPORTS_CIRCULAR == TRUE */
+#endif
 
 /**
  * @brief   Exchanges one frame using a polled wait.

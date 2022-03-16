@@ -429,7 +429,7 @@
 #error "Invalid DMA priority assigned to SPI6"
 #endif
 
-#if STM32_SPI_USE_SPI1 || STM32_SPI_USE_SPI2 || STM32_SPI_USE_SPI1 ||       \
+#if STM32_SPI_USE_SPI1 || STM32_SPI_USE_SPI2 || STM32_SPI_USE_SPI3 ||       \
     STM32_SPI_USE_SPI4 || STM32_SPI_USE_SPI5
 #define STM32_SPI_DMA_REQUIRED
 #if !defined(STM32_DMA_REQUIRED)
@@ -468,19 +468,23 @@
     /* Receive DMA stream.*/                                                \
     const stm32_dma_stream_t  *dma;                                         \
     /* Receive BDMA stream.*/                                               \
-    const stm32_bdma_stream_t  *bdma;                                       \
+    const stm32_bdma_stream_t *bdma;                                        \
   } rx;                                                                     \
   /* Union of the TX DMA streams.*/                                         \
   union {                                                                   \
     /* Transmit DMA stream.*/                                               \
     const stm32_dma_stream_t  *dma;                                         \
     /* Transmit DMA stream.*/                                               \
-    const stm32_bdma_stream_t  *bdma;                                       \
+    const stm32_bdma_stream_t *bdma;                                        \
   } tx;                                                                     \
   /* RX DMA mode bit mask.*/                                                \
   uint32_t                  rxdmamode;                                      \
   /* TX DMA mode bit mask.*/                                                \
-  uint32_t                  txdmamode
+  uint32_t                  txdmamode;                                      \
+  /* Sink for discarded data.*/                                             \
+  uint32_t                  rxsink;                                         \
+  /* Source for default TX pattern.*/                                       \
+  uint32_t                  txsource
 #endif
 
 #if defined(STM32_SPI_DMA_REQUIRED) && !defined(STM32_SPI_BDMA_REQUIRED)
@@ -500,7 +504,11 @@
   /* RX DMA mode bit mask.*/                                                \
   uint32_t                  rxdmamode;                                      \
   /* TX DMA mode bit mask.*/                                                \
-  uint32_t                  txdmamode
+  uint32_t                  txdmamode;                                      \
+  /* Sink for discarded data.*/                                             \
+  uint32_t                  rxsink;                                         \
+  /* Source for default TX pattern.*/                                       \
+  uint32_t                  txsource
 #endif
 
 #if !defined(STM32_SPI_DMA_REQUIRED) && defined(STM32_SPI_BDMA_REQUIRED)
@@ -520,7 +528,11 @@
   /* RX DMA mode bit mask.*/                                                \
   uint32_t                  rxdmamode;                                      \
   /* TX DMA mode bit mask.*/                                                \
-  uint32_t                  txdmamode
+  uint32_t                  txdmamode;                                      \
+  /* Sink for discarded data.*/                                             \
+  uint32_t                  rxsink;                                         \
+  /* Source for default TX pattern.*/                                       \
+  uint32_t                  txsource
 #endif
 
 /**
