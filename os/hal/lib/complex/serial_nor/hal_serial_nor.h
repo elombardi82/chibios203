@@ -1,12 +1,9 @@
 /*
     ChibiOS - Copyright (C) 2006..2018 Giovanni Di Sirio
-
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
     You may obtain a copy of the License at
-
         http://www.apache.org/licenses/LICENSE-2.0
-
     Unless required by applicable law or agreed to in writing, software
     distributed under the License is distributed on an "AS IS" BASIS,
     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -65,6 +62,15 @@
 #if !defined(SNOR_SHARED_BUS) || defined(__DOXYGEN__)
 #define SNOR_SHARED_BUS                     TRUE
 #endif
+
+/**
+ * @brief   Exclusive access control.
+ * @note    Disabling this option saves both code and data space.
+ */
+#if !defined(SNOR_USE_MUTUAL_EXCLUSION) || defined(__DOXYGEN__)
+#define SNOR_USE_MUTUAL_EXCLUSION           TRUE
+#endif
+
 /** @} */
 
 /*===========================================================================*/
@@ -138,6 +144,12 @@ typedef struct {
    * @brief   Device ID and unique ID.
    */
   uint8_t                       device_id[20];
+#if (SNOR_USE_MUTUAL_EXCLUSION == TRUE) || defined(__DOXYGEN__)
+  /**
+   * @brief   Mutex protecting SNOR.
+   */
+  mutex_t                       mutex;
+#endif /* SNOR_USE_MUTUAL_EXCLUSION == TRUE */
 } SNORDriver;
 
 /*===========================================================================*/
@@ -156,8 +168,10 @@ typedef struct {
 #ifdef __cplusplus
 extern "C" {
 #endif
+#if SNOR_SHARED_BUS == TRUE
   void bus_acquire(BUSDriver *busp, const BUSConfig *config);
   void bus_release(BUSDriver *busp);
+#endif
   void bus_cmd(BUSDriver *busp, uint32_t cmd);
   void bus_cmd_send(BUSDriver *busp, uint32_t cmd, size_t n, const uint8_t *p);
   void bus_cmd_receive(BUSDriver *busp,
@@ -207,4 +221,3 @@ extern "C" {
 #endif /* HAL_SERIAL_NOR_H */
 
 /** @} */
-

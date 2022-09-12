@@ -1,78 +1,42 @@
 /*
-    ChibiOS - Copyright (C) 2006..2018 Giovanni Di Sirio.
+ ChibiOS - Copyright (C) 2006..2022 Giovanni Di Sirio
 
-    This file is part of ChibiOS.
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
 
-    ChibiOS is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 3 of the License, or
-    (at your option) any later version.
+ http://www.apache.org/licenses/LICENSE-2.0
 
-    ChibiOS is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+ */
+/*
+ * Parts of this file are:
+ *
+ * Copyright (c) 2017, Arm Limited. All rights reserved.
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
 
 /**
- * @file    chversion.h
- * @brief   Version Module macros and structures.
+ * @file    lfs_hal.h
+ * @brief   LittleFS-HAL bindings header.
  *
- * @addtogroup chibios_version
- * @details This module contains information about the ChibiOS release, it
- *          is common to all subsystems.
+ * @addtogroup LITTLEFS_BINDINGS
  * @{
  */
 
-#ifndef CHVERSION_H
-#define CHVERSION_H
+#ifndef LFS_WSPI_H
+#define LFS_WSPI_H
+
+#include "hal.h"
+#include "lfs.h"
 
 /*===========================================================================*/
 /* Module constants.                                                         */
 /*===========================================================================*/
-
-/**
- * @brief   ChibiOS product identification macro.
- */
-#define _CHIBIOS_
-
-/**
- * @brief   Stable release flag.
- */
-#define CH_VERSION_STABLE       1
-
-/**
- * @name    ChibiOS version identification
- * @{
- */
-/**
- * @brief   ChibiOS version string.
- */
-#define CH_VERSION              "20.3.3"
-
-/**
- * @brief   ChibiOS version release year.
- */
-#define CH_VERSION_YEAR         20
-
-/**
- * @brief   ChibiOS version release month.
- */
-#define CH_VERSION_MONTH        3
-
-/**
- * @brief   ChibiOS version patch number.
- */
-#define CH_VERSION_PATCH        3
-
-/**
- * @brief   ChibiOS version nickname.
- */
-#define CH_VERSION_NICKNAME     "Praiano"
-/** @} */
 
 /*===========================================================================*/
 /* Module pre-compile time settings.                                         */
@@ -94,10 +58,25 @@
 /* External declarations.                                                    */
 /*===========================================================================*/
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+  int __lfs_read(const struct lfs_config *c, lfs_block_t block,
+                 lfs_off_t off, void *buffer, lfs_size_t size);
+  int __lfs_prog(const struct lfs_config *c, lfs_block_t block,
+                 lfs_off_t off, const void *buffer, lfs_size_t size);
+  int __lfs_erase(const struct lfs_config *c, lfs_block_t block);
+  int __lfs_sync(const struct lfs_config *c);
+  int __lfs_lock(const struct lfs_config *c);
+  int __lfs_unlock(const struct lfs_config *c);
+#ifdef __cplusplus
+}
+#endif
+
 /*===========================================================================*/
 /* Module inline functions.                                                  */
 /*===========================================================================*/
 
-#endif /* CHVERSION_H */
+#endif /* LFS_WSPI_H */
 
 /** @} */

@@ -72,6 +72,11 @@
 *****************************************************************************
 *** Releases and Change Log                                               ***
 *****************************************************************************
+*** 20.3.3 Edoardo Lombardi patch ***
+- NEW: Added LFS
+- NEW: Added support for w25q flash memory
+- NEW: Updated flash driver
+
 *** 20.3.2 Edoardo Lombardi patch ***
 - NEW: Support for H7
 - NEW: I2Sv3 driver

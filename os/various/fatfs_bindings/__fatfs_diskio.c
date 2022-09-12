@@ -10,20 +10,15 @@
 #include "ff.h"
 #include "diskio.h"
 
-/* TODO: add flash in this error check. */
-//#if HAL_USE_MMC_SPI && HAL_USE_SDC
-//#error "cannot specify both MMC_SPI and SDC drivers"
-//#endif
+#if HAL_USE_MMC_SPI && HAL_USE_SDC
+#error "cannot specify both MMC_SPI and SDC drivers"
+#endif
 
 #if !defined(FATFS_HAL_DEVICE)
 #if HAL_USE_MMC_SPI
 #define FATFS_HAL_DEVICE MMCD1
-#elif HAL_USE_SDC
+#else
 #define FATFS_HAL_DEVICE SDCD1
-#elif HAL_USE_SPI
-#include "hal_serial_nor.h"
-#define FATFS_HAL_DEVICE snor1
-#define SNOR_SECTOR_SIZE 512u
 #endif
 #endif
 
@@ -31,10 +26,8 @@
 extern MMCDriver FATFS_HAL_DEVICE;
 #elif HAL_USE_SDC
 extern SDCDriver FATFS_HAL_DEVICE;
-#elif HAL_USE_SPI
-extern SNORDriver FATFS_HAL_DEVICE;
 #else
-#error "MMC_SPI, SDC or FLASH driver must be specified"
+#error "MMC_SPI or SDC driver must be specified"
 #endif
 
 #if HAL_USE_RTC
@@ -46,7 +39,7 @@ extern RTCDriver RTCD1;
 
 #define MMC     0
 #define SDC     0
-#define SNOR    0
+
 
 
 /*-----------------------------------------------------------------------*/
@@ -68,7 +61,7 @@ DSTATUS disk_initialize (
     if (mmcIsWriteProtected(&FATFS_HAL_DEVICE))
       stat |=  STA_PROTECT;
     return stat;
-#elif HAL_USE_SDC
+#else
   case SDC:
     stat = 0;
     /* It is initialized externally, just reads the status.*/
@@ -76,13 +69,6 @@ DSTATUS disk_initialize (
       stat |= STA_NOINIT;
     if (sdcIsWriteProtected(&FATFS_HAL_DEVICE))
       stat |=  STA_PROTECT;
-    return stat;
-#elif HAL_USE_SPI
-  case SNOR:
-    stat = 0;
-    /* It is initialized externally, just reads the status.*/
-    if (FATFS_HAL_DEVICE.state != FLASH_READY)
-      stat |= STA_NOINIT;
     return stat;
 #endif
   }
@@ -110,7 +96,7 @@ DSTATUS disk_status (
     if (mmcIsWriteProtected(&FATFS_HAL_DEVICE))
       stat |= STA_PROTECT;
     return stat;
-#elif HAL_USE_SDC
+#else
   case SDC:
     stat = 0;
     /* It is initialized externally, just reads the status.*/
@@ -118,12 +104,6 @@ DSTATUS disk_status (
       stat |= STA_NOINIT;
     if (sdcIsWriteProtected(&FATFS_HAL_DEVICE))
       stat |= STA_PROTECT;
-    return stat;
-#elif HAL_USE_SPI
-  case SNOR:
-    stat = 0;
-    if (FATFS_HAL_DEVICE.state != FLASH_READY)
-      stat |= STA_NOINIT;
     return stat;
 #endif
   }
@@ -158,30 +138,12 @@ DRESULT disk_read (
     if (mmcStopSequentialRead(&FATFS_HAL_DEVICE))
         return RES_ERROR;
     return RES_OK;
-#elif HAL_USE_SDC
+#else
   case SDC:
     if (blkGetDriverState(&FATFS_HAL_DEVICE) != BLK_READY)
       return RES_NOTRDY;
     if (sdcRead(&FATFS_HAL_DEVICE, sector, buff, count))
       return RES_ERROR;
-    return RES_OK;
-#elif HAL_USE_SPI
-  case SNOR:
-    if (FATFS_HAL_DEVICE.state != FLASH_READY) {
-      return RES_NOTRDY;
-    }
-
-    //const flash_descriptor_t *flash_desc;
-    //flash_desc = flashGetDescriptor((BaseFlash *)&FATFS_HAL_DEVICE);
-
-    while (count > 0) {
-      if (flashRead((BaseFlash *)&FATFS_HAL_DEVICE, sector * SNOR_SECTOR_SIZE, SNOR_SECTOR_SIZE, buff) != FLASH_NO_ERROR) {
-        return RES_ERROR;
-      }
-      sector++;
-      count--;
-      buff += SNOR_SECTOR_SIZE;
-    }
     return RES_OK;
 #endif
   }
@@ -219,30 +181,12 @@ DRESULT disk_write (
     if (mmcStopSequentialWrite(&FATFS_HAL_DEVICE))
         return RES_ERROR;
     return RES_OK;
-#elif HAL_USE_SDC
+#else
   case SDC:
     if (blkGetDriverState(&FATFS_HAL_DEVICE) != BLK_READY)
       return RES_NOTRDY;
     if (sdcWrite(&FATFS_HAL_DEVICE, sector, buff, count))
       return RES_ERROR;
-    return RES_OK;
-#elif HAL_USE_SPI
-  case SNOR:
-    if (FATFS_HAL_DEVICE.state != FLASH_READY) {
-      return RES_NOTRDY;
-    }
-
-    //const flash_descriptor_t *flash_desc;
-    //flash_desc = flashGetDescriptor((BaseFlash *)&FATFS_HAL_DEVICE);
-
-    while (count > 0) {
-      if (flashProgram((BaseFlash *)&FATFS_HAL_DEVICE, sector * SNOR_SECTOR_SIZE, SNOR_SECTOR_SIZE, buff) != FLASH_NO_ERROR) {
-        return RES_ERROR;
-      }
-      sector++;
-      count--;
-      buff += SNOR_SECTOR_SIZE;
-    }
     return RES_OK;
 #endif
   }
@@ -263,11 +207,6 @@ DRESULT disk_ioctl (
 {
   (void)buff;
 
-#if HAL_USE_SPI
-  const flash_descriptor_t *flash_desc;
-  flash_desc = flashGetDescriptor((BaseFlash *)&FATFS_HAL_DEVICE);
-#endif
-
   switch (pdrv) {
 #if HAL_USE_MMC_SPI
   case MMC:
@@ -287,7 +226,7 @@ DRESULT disk_ioctl (
     default:
         return RES_PARERR;
     }
-#elif HAL_USE_SDC
+#else
   case SDC:
     switch (cmd) {
     case CTRL_SYNC:
@@ -308,60 +247,8 @@ DRESULT disk_ioctl (
         sdcErase(&FATFS_HAL_DEVICE, *((DWORD *)buff), *((DWORD *)buff + 1));
         return RES_OK;
 #endif
-
-#elif HAL_USE_SPI
-  case SNOR:
-
-    switch (cmd) {
-
-    case CTRL_SYNC:
-      return RES_OK;
-
-    case GET_SECTOR_COUNT:
-//      const flash_descriptor_t *flash_desc;
-//      flash_desc = flashGetDescriptor((BaseFlash *)&FATFS_HAL_DEVICE);
-      /* TODO: test. */
-//      *((DWORD *)buff) = flash_desc->sectors_count;
-      *((DWORD *)buff) = flash_desc->size / SNOR_SECTOR_SIZE;
-      return RES_OK;
-
-#if FF_MAX_SS > FF_MIN_SS
-    case GET_SECTOR_SIZE:
-//      const flash_descriptor_t *flash_desc;
-//      flash_desc = flashGetDescriptor((BaseFlash *)&FATFS_HAL_DEVICE);
-      /* TODO: test. */
-//      *((DWORD *)buff) = flash_desc->sectors_size;
-      *((DWORD *)buff) = SNOR_SECTOR_SIZE;
-      return RES_OK;
-#endif
-
-    case GET_BLOCK_SIZE:
-//      const flash_descriptor_t *flash_desc;
-//      flash_desc = flashGetDescriptor((BaseFlash *)&FATFS_HAL_DEVICE);
-      /* TODO: test. */
-//      *((DWORD *)buff) = flash_desc->sectors_size;
-      *((DWORD *)buff) = 1;
-      return RES_OK;
-
-#if FF_USE_TRIM
-    case CTRL_TRIM:
-      start_block = *((DWORD *)buff);
-      end_block = *((DWORD *)buff + 1);
-
-      while (start_block < end_block) {
-        if (flashStartEraseSector((BaseFlash *)&FATFS_HAL_DEVICE, start_block) != FLASH_NO_ERROR) {
-          return RES_ERROR;
-        }
-        if (flashWaitErase((BaseFlash *)&FATFS_HAL_DEVICE) != FLASH_NO_ERROR) {
-          return RES_ERROR;
-        }
-        start_block++;
-      }
-      return RES_OK;
-#endif
-
     default:
-      return RES_PARERR;
+        return RES_PARERR;
     }
 #endif
   }
