@@ -73,6 +73,9 @@
 *** Releases and Change Log                                               ***
 *****************************************************************************
 *** 20.3.3 Edoardo Lombardi patch ***
+- UPDATE: fixed bug in community HAL on usb msd driver
+
+*** 20.3.3 Edoardo Lombardi patch ***
 - NEW: Added LFS
 - NEW: Added support for w25q flash memory
 - NEW: Updated flash driver

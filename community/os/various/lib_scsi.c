@@ -28,9 +28,11 @@
 
 #include "lib_scsi.h"
 
+#if 0
 #define DEBUG_TRACE_PRINT     FALSE
 #define DEBUG_TRACE_WARNING   FALSE
 #define DEBUG_TRACE_ERROR     FALSE
+#endif
 #include "dbgtrace.h"
 
 #define ARCH_LITTLE_ENDIAN

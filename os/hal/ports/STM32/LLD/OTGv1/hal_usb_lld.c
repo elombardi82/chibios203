@@ -539,6 +539,7 @@ static void usb_lld_serve_interrupt(USBDriver *usbp) {
 
   /* Reset interrupt handling.*/
   if (sts & GINTSTS_USBRST) {
+
     /* Default reset action.*/
     _usb_reset(usbp);
 

@@ -39,6 +39,20 @@
 /* Driver pre-compile time settings.                                         */
 /*===========================================================================*/
 
+/**
+ * @brief Set the size of the USB MSD thread's stack working area
+ */
+#if !defined(USB_MSD_THREAD_WA_SIZE) || defined(__DOXYGEN__)
+#define USB_MSD_THREAD_WA_SIZE          256
+#endif
+
+/**
+ * @brief Set the priority of the USB MSD thread.  Defaults to NORMALPRIO.
+ */
+#if !defined(MSD_THD_PRIO) || defined(__DOXYGEN__)
+#define MSD_THD_PRIO                    NORMALPRIO
+#endif
+
 /*===========================================================================*/
 /* Derived constants and error checks.                                       */
 /*===========================================================================*/
@@ -73,7 +87,7 @@ typedef enum {
  * @brief   Represents command block wrapper structure.
  * @details See USB Mass Storage Class Specification.
  */
-typedef struct PACKED_VAR {
+typedef __PACKED_STRUCT {
   uint32_t  signature;
   uint32_t  tag;
   uint32_t  data_len;
@@ -87,7 +101,7 @@ typedef struct PACKED_VAR {
  * @brief   Represents command status wrapper structure.
  * @details See USB Mass Storage Class Specification.
  */
-typedef struct PACKED_VAR {
+typedef __PACKED_STRUCT {
   uint32_t  signature;
   uint32_t  tag;
   uint32_t  data_residue;
@@ -132,7 +146,7 @@ struct USBMassStorageDriver {
   /**
    * @brief   Thread working area.
    */
-  THD_WORKING_AREA(             waMSDWorker, 512);
+  THD_WORKING_AREA(             waMSDWorker, USB_MSD_THREAD_WA_SIZE);
   /**
    * @brief   Worker thread handler.
    */
