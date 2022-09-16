@@ -43,14 +43,14 @@
  * @brief Set the size of the USB MSD thread's stack working area
  */
 #if !defined(USB_MSD_THREAD_WA_SIZE) || defined(__DOXYGEN__)
-#define USB_MSD_THREAD_WA_SIZE          256
+#define USB_MSD_THREAD_WA_SIZE          1024
 #endif
 
 /**
- * @brief Set the priority of the USB MSD thread.  Defaults to NORMALPRIO.
+ * @brief Set the priority of the USB MSD thread.  Defaults to NORMALPRIO + 1.
  */
 #if !defined(MSD_THD_PRIO) || defined(__DOXYGEN__)
-#define MSD_THD_PRIO                    NORMALPRIO
+#define MSD_THD_PRIO                    (NORMALPRIO + 1)
 #endif
 
 /*===========================================================================*/

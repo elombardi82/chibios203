@@ -73,6 +73,7 @@
 *** Releases and Change Log                                               ***
 *****************************************************************************
 *** 20.3.3 Edoardo Lombardi patch ***
+- FIXED BUG: minor changes
 - UPDATE: fixed bug in community HAL on usb msd driver
 
 *** 20.3.3 Edoardo Lombardi patch ***
