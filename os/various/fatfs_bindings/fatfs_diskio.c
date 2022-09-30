@@ -23,7 +23,7 @@
 #elif HAL_USE_SPI
 #include "hal_serial_nor.h"
 #define FATFS_HAL_DEVICE snor1
-#define SNOR_SECTOR_SIZE 512u
+#define SNOR_SECTOR_SIZE 4096u
 #endif
 #endif
 
@@ -232,16 +232,24 @@ DRESULT disk_write (
       return RES_NOTRDY;
     }
 
-    //const flash_descriptor_t *flash_desc;
-    //flash_desc = flashGetDescriptor((BaseFlash *)&FATFS_HAL_DEVICE);
+    const flash_descriptor_t *flash_desc;
+    flash_desc = flashGetDescriptor((BaseFlash *)&FATFS_HAL_DEVICE);
 
     while (count > 0) {
-      if (flashProgram((BaseFlash *)&FATFS_HAL_DEVICE, sector * SNOR_SECTOR_SIZE, SNOR_SECTOR_SIZE, buff) != FLASH_NO_ERROR) {
+      flashStartEraseSector((BaseFlash *)&FATFS_HAL_DEVICE, sector);
+      if (flashWaitErase((BaseFlash *)&FATFS_HAL_DEVICE) != FLASH_NO_ERROR) {
+        return RES_ERROR;
+      }
+      if (flashVerifyErase((BaseFlash *)&FATFS_HAL_DEVICE, sector) != FLASH_NO_ERROR) {
+        return RES_ERROR;
+      }
+
+      if (flashProgram((BaseFlash *)&FATFS_HAL_DEVICE, sector * flash_desc->sectors_size, flash_desc->sectors_size, buff) != FLASH_NO_ERROR) {
         return RES_ERROR;
       }
       sector++;
       count--;
-      buff += SNOR_SECTOR_SIZE;
+      buff += flash_desc->sectors_size;
     }
     return RES_OK;
 #endif

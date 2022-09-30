@@ -72,6 +72,11 @@
 *****************************************************************************
 *** Releases and Change Log                                               ***
 *****************************************************************************
+*** 20.3.4 Edoardo Lombardi patch ***
+- FIXED BUG: I2S support
+- FIXED BUG: USB MSD
+- UPDATE: Flash supports in FATFS 
+
 *** 20.3.3 Edoardo Lombardi patch ***
 - FIXED BUG: minor changes
 - UPDATE: fixed bug in community HAL on usb msd driver
