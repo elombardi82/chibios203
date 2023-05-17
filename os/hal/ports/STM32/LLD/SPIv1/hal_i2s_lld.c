@@ -555,7 +555,7 @@ void i2s_lld_stop_exchange(I2SDriver *i2sp) {
 
     /* From the RM: To switch off the I2S, by clearing I2SE, it is mandatory
        to wait for TXE = 1 and BSY = 0.*/
-    while ((i2sp->spi->SR & (SPI_SR_TXE | SPI_SR_BSY)) != SPI_SR_TXE)
+    while ((i2sp->spi->SR & (SPI_SR_TXE /*| SPI_SR_BSY */)) != SPI_SR_TXE)
       ;
 
     /* Stop SPI/I2S peripheral.*/
