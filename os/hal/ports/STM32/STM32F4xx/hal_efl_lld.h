@@ -67,6 +67,27 @@
 #define STM32_FLASH2_SIZE                   1024U
 #define STM32_FLASH1_SECTORS_TOTAL          16
 #define STM32_FLASH2_SECTORS_TOTAL          12
+
+#elif defined(STM32F401xx) || defined(STM32F411xx) ||                         \
+    defined(__DOXYGEN__)
+
+/* Flash size register. */
+#define STM32_FLASH_SIZE_REGISTER           0x1FFF7A22
+#define STM32_FLASH_SIZE_SCALE              1024U
+
+/*
+ * Device flash size...
+ *
+ */
+#define STM32_FLASH_NUMBER_OF_BANKS         1
+#define STM32_FLASH1_SIZE                   128U
+#define STM32_FLASH2_SIZE                   256U
+#define STM32_FLASH3_SIZE                   384U
+#define STM32_FLASH4_SIZE                   512U
+#define STM32_FLASH1_SECTORS_TOTAL          5
+#define STM32_FLASH2_SECTORS_TOTAL          6
+#define STM32_FLASH3_SECTORS_TOTAL          7
+#define STM32_FLASH4_SECTORS_TOTAL          8
 #else
 #error "This EFL driver does not support the selected device"
 #endif
