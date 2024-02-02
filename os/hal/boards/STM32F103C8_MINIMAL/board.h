@@ -25,7 +25,7 @@
 /*
  * Board identifier.
  */
-#define BOARD_MINIMAL_STM32_F103
+#define BOARD_STM32F1_MINIMAL
 #define BOARD_NAME              "STM32F103 Minimal Module"
 
 /*
@@ -53,13 +53,15 @@
 
 /* on-board */
 
-#define GPIOC_LED               13
+#define GPIOC_LED                   13
 
-#define GPIOA_USBDM             11      // pin 8
-#define GPIOA_USBDP             12      // pin 9
+#define GPIOA_USBDM                 11      /* pin A8 */
+#define GPIOA_USBDP                 12      /* pin A9 */
 
-#define GPIOC_OSC32_IN          14
-#define GPIOC_OSC32_OUT         15
+#define GPIOC_OSC32_IN              14
+#define GPIOC_OSC32_OUT             15
+
+#define LINE_LED                    PAL_LINE(GPIOC, 13U)
 
 /*
  * I/O ports initial setup, this configuration is established soon after reset
