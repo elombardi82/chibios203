@@ -283,7 +283,10 @@ void sduStop(SerialUSBDriver *sdup) {
   if (sdup->config->int_in > 0U) {
     usbp->in_params[sdup->config->int_in - 1U]  = NULL;
   }
-  sdup->config = NULL;
+  /*
+   * FIXME EDO
+   */
+  //sdup->config = NULL;
   sdup->state  = SDU_STOP;
 
   /* Enforces a disconnection.*/
